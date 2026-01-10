@@ -237,62 +237,62 @@ export default function InventoryPage() {
   const lowStock = products.filter((p) => p.stockQty > 0 && p.stockQty <= 2).length
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 lg:space-y-6">
       {/* Page Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Inventory</h1>
-          <p className="text-slate-500">Manage products and stock levels</p>
+          <h1 className="text-xl lg:text-2xl font-bold">Inventory</h1>
+          <p className="text-sm lg:text-base text-slate-500">Manage products and stock levels</p>
         </div>
-        <Button>
+        <Button className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           Add Product
         </Button>
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:gap-4 lg:grid-cols-4">
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 lg:p-4">
             <div className="flex items-center space-x-2">
-              <Package className="h-5 w-5 text-blue-500" />
-              <p className="text-sm text-slate-500">Total Products</p>
+              <Package className="h-4 w-4 lg:h-5 lg:w-5 text-blue-500" />
+              <p className="text-xs lg:text-sm text-slate-500">Total Products</p>
             </div>
-            <p className="mt-2 text-2xl font-bold">1,702</p>
+            <p className="mt-1 lg:mt-2 text-xl lg:text-2xl font-bold">1,702</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 lg:p-4">
             <div className="flex items-center space-x-2">
-              <CheckCircle className="h-5 w-5 text-green-500" />
-              <p className="text-sm text-slate-500">In Stock</p>
+              <CheckCircle className="h-4 w-4 lg:h-5 lg:w-5 text-green-500" />
+              <p className="text-xs lg:text-sm text-slate-500">In Stock</p>
             </div>
-            <p className="mt-2 text-2xl font-bold">984</p>
+            <p className="mt-1 lg:mt-2 text-xl lg:text-2xl font-bold">984</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 lg:p-4">
             <div className="flex items-center space-x-2">
-              <AlertTriangle className="h-5 w-5 text-amber-500" />
-              <p className="text-sm text-slate-500">Low Stock</p>
+              <AlertTriangle className="h-4 w-4 lg:h-5 lg:w-5 text-amber-500" />
+              <p className="text-xs lg:text-sm text-slate-500">Low Stock</p>
             </div>
-            <p className="mt-2 text-2xl font-bold">{lowStock}</p>
+            <p className="mt-1 lg:mt-2 text-xl lg:text-2xl font-bold">{lowStock}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 lg:p-4">
             <div className="flex items-center space-x-2">
-              <Archive className="h-5 w-5 text-slate-500" />
-              <p className="text-sm text-slate-500">Total Value</p>
+              <Archive className="h-4 w-4 lg:h-5 lg:w-5 text-slate-500" />
+              <p className="text-xs lg:text-sm text-slate-500">Total Value</p>
             </div>
-            <p className="mt-2 text-2xl font-bold">{formatCurrency(totalValue)}</p>
+            <p className="mt-1 lg:mt-2 text-xl lg:text-2xl font-bold">{formatCurrency(totalValue)}</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
       <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
+        <div className="relative w-64">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <Input
             placeholder="Search by name or SKU..."
@@ -321,8 +321,8 @@ export default function InventoryPage() {
         />
       </div>
 
-      {/* Products Table */}
-      <Card>
+      {/* Products Table - Desktop */}
+      <Card className="hidden lg:block">
         <CardContent className="p-0">
           <Table>
             <TableHeader>
@@ -383,6 +383,37 @@ export default function InventoryPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Product Cards - Mobile */}
+      <div className="space-y-3 lg:hidden">
+        {filteredProducts.map((product) => (
+          <Card key={product.id} className="cursor-pointer active:bg-slate-50">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex-1 min-w-0 pr-2">
+                  <p className="font-medium text-sm truncate">{product.name}</p>
+                  <p className="text-xs text-slate-500 font-mono">{product.sku}</p>
+                </div>
+                <Badge variant={statusColors[product.status]} className="text-xs flex-shrink-0">
+                  {product.status.replace('_', ' ')}
+                </Badge>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <p className="text-slate-500">Price</p>
+                  <p className="font-medium">{product.price ? formatCurrency(product.price) : 'POA'}</p>
+                </div>
+                <div>
+                  <p className="text-slate-500">Stock</p>
+                  <p className={`font-medium ${product.stockQty === 0 ? 'text-red-600' : product.stockQty <= 2 ? 'text-amber-600' : ''}`}>
+                    {product.stockQty} in {product.location}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   )
 }

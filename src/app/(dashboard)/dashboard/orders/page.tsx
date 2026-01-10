@@ -215,53 +215,53 @@ export default function OrdersPage() {
   const inProductionOrders = orders.filter((o) => o.status === 'IN_PRODUCTION').length
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 lg:space-y-6">
       {/* Page Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Orders</h1>
-          <p className="text-slate-500">Manage customer orders and fulfillment</p>
+          <h1 className="text-xl lg:text-2xl font-bold">Orders</h1>
+          <p className="text-sm lg:text-base text-slate-500">Manage customer orders and fulfillment</p>
         </div>
-        <Button onClick={() => setIsModalOpen(true)}>
+        <Button onClick={() => setIsModalOpen(true)} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           Create Order
         </Button>
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:gap-4 lg:grid-cols-4">
         <Card>
-          <CardContent className="p-4">
-            <p className="text-sm text-slate-500">Total Orders</p>
-            <p className="text-2xl font-bold">156</p>
+          <CardContent className="p-3 lg:p-4">
+            <p className="text-xs lg:text-sm text-slate-500">Total Orders</p>
+            <p className="text-xl lg:text-2xl font-bold">156</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
-            <p className="text-sm text-slate-500">Pending</p>
-            <p className="text-2xl font-bold">{pendingOrders}</p>
+          <CardContent className="p-3 lg:p-4">
+            <p className="text-xs lg:text-sm text-slate-500">Pending</p>
+            <p className="text-xl lg:text-2xl font-bold">{pendingOrders}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
-            <p className="text-sm text-slate-500">In Production</p>
-            <p className="text-2xl font-bold">{inProductionOrders}</p>
+          <CardContent className="p-3 lg:p-4">
+            <p className="text-xs lg:text-sm text-slate-500">In Production</p>
+            <p className="text-xl lg:text-2xl font-bold">{inProductionOrders}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
-            <p className="text-sm text-slate-500">This Month Revenue</p>
-            <p className="text-2xl font-bold">{formatCurrency(totalRevenue)}</p>
+          <CardContent className="p-3 lg:p-4">
+            <p className="text-xs lg:text-sm text-slate-500">This Month Revenue</p>
+            <p className="text-xl lg:text-2xl font-bold">{formatCurrency(totalRevenue)}</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
       <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
+        <div className="relative w-64">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <Input
-            placeholder="Search order number or customer..."
+            placeholder="Search orders..."
             className="pl-10"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -271,24 +271,24 @@ export default function OrdersPage() {
           options={statusOptions}
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="w-40"
+          className="w-36"
         />
         <Select
           options={orderTypeOptions}
           value={orderTypeFilter}
           onChange={(e) => setOrderTypeFilter(e.target.value)}
-          className="w-40"
+          className="w-32"
         />
         <Select
           options={channelOptions}
           value={channelFilter}
           onChange={(e) => setChannelFilter(e.target.value)}
-          className="w-36"
+          className="w-32"
         />
       </div>
 
-      {/* Orders Table */}
-      <Card>
+      {/* Orders Table - Desktop */}
+      <Card className="hidden lg:block">
         <CardContent className="p-0">
           <Table>
             <TableHeader>
@@ -355,9 +355,43 @@ export default function OrdersPage() {
         </CardContent>
       </Card>
 
+      {/* Orders Cards - Mobile */}
+      <div className="space-y-3 lg:hidden">
+        {filteredOrders.map((order) => (
+          <Card key={order.id} className="cursor-pointer active:bg-slate-50">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <p className="font-mono font-medium text-sm">{order.orderNumber}</p>
+                  <p className="text-sm text-slate-500">
+                    {order.customer.firstName} {order.customer.lastName}
+                  </p>
+                </div>
+                <Badge variant={statusColors[order.status]} className="text-xs">
+                  {order.status.replace('_', ' ')}
+                </Badge>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <p className="text-slate-500">Total</p>
+                  <p className="font-medium">{formatCurrency(order.totalAmount)}</p>
+                </div>
+                <div>
+                  <p className="text-slate-500">Type</p>
+                  <p className="font-medium">{order.orderType}</p>
+                </div>
+              </div>
+              <div className="mt-2 text-xs text-slate-400">
+                {formatDateTime(order.placedAt)}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
       {/* Create Order Modal */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Create New Order" size="lg">
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4 lg:space-y-6">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Customer *</label>
             <Select
@@ -367,7 +401,7 @@ export default function OrdersPage() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Order Type</label>
               <Select
@@ -398,7 +432,7 @@ export default function OrdersPage() {
                   placeholder="Search product or enter SKU..."
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Quantity</label>
                   <Input
@@ -432,11 +466,11 @@ export default function OrdersPage() {
             />
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4 border-t">
+            <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)} className="w-full sm:w-auto">
               Cancel
             </Button>
-            <Button type="submit">Create Order</Button>
+            <Button type="submit" className="w-full sm:w-auto">Create Order</Button>
           </div>
         </form>
       </Modal>

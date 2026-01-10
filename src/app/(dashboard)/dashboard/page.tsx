@@ -111,15 +111,15 @@ const statusColors: Record<string, 'default' | 'success' | 'warning' | 'info' | 
 
 export default function DashboardPage() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 lg:space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-bold">Dashboard</h1>
-        <p className="text-slate-500">Welcome to G. Collins & Sons Smart Platform</p>
+        <h1 className="text-xl lg:text-2xl font-bold">Dashboard</h1>
+        <p className="text-sm lg:text-base text-slate-500">Welcome to G. Collins & Sons Smart Platform</p>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:gap-4 lg:grid-cols-4">
         <StatsCard
           title="Total Revenue"
           value={formatCurrency(stats.totalRevenue)}
@@ -229,26 +229,26 @@ export default function DashboardPage() {
 
       {/* Low Stock Alert */}
       <Card>
-        <CardHeader className="flex flex-row items-center space-x-2">
-          <AlertTriangle className="h-5 w-5 text-amber-500" />
-          <CardTitle className="text-lg">Low Stock Alert</CardTitle>
+        <CardHeader className="flex flex-row items-center space-x-2 px-4 lg:px-6">
+          <AlertTriangle className="h-4 w-4 lg:h-5 lg:w-5 text-amber-500" />
+          <CardTitle className="text-base lg:text-lg">Low Stock Alert</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
+        <CardContent className="px-4 lg:px-6">
+          <div className="grid gap-3 lg:gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {lowStockItems.map((item) => (
               <div
                 key={item.id}
-                className="flex items-center justify-between rounded-lg border p-4"
+                className="flex items-center justify-between rounded-lg border p-3 lg:p-4"
               >
-                <div className="flex items-center space-x-3">
-                  <Package className="h-8 w-8 text-slate-400" />
-                  <div>
-                    <p className="font-medium">{item.name}</p>
+                <div className="flex items-center space-x-2 lg:space-x-3 min-w-0 flex-1">
+                  <Package className="h-6 w-6 lg:h-8 lg:w-8 text-slate-400 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm lg:text-base truncate">{item.name}</p>
                     <p className="text-xs text-slate-500">{item.sku}</p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-lg font-bold text-amber-600">{item.quantity}</p>
+                <div className="text-right flex-shrink-0 ml-2">
+                  <p className="text-base lg:text-lg font-bold text-amber-600">{item.quantity}</p>
                   <p className="text-xs text-slate-500">{item.location}</p>
                 </div>
               </div>

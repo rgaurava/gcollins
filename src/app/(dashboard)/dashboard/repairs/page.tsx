@@ -212,62 +212,62 @@ export default function RepairsPage() {
   const pendingApproval = repairs.filter((r) => ['ESTIMATE_PENDING', 'ESTIMATE_SENT'].includes(r.status)).length
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 lg:space-y-6">
       {/* Page Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Repairs</h1>
-          <p className="text-slate-500">Manage workshop repairs and services</p>
+          <h1 className="text-xl lg:text-2xl font-bold">Repairs</h1>
+          <p className="text-sm lg:text-base text-slate-500">Manage workshop repairs and services</p>
         </div>
-        <Button onClick={() => setIsModalOpen(true)}>
+        <Button onClick={() => setIsModalOpen(true)} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           New Repair
         </Button>
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:gap-4 lg:grid-cols-4">
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 lg:p-4">
             <div className="flex items-center space-x-2">
-              <Wrench className="h-5 w-5 text-blue-500" />
-              <p className="text-sm text-slate-500">Total Active</p>
+              <Wrench className="h-4 w-4 lg:h-5 lg:w-5 text-blue-500" />
+              <p className="text-xs lg:text-sm text-slate-500">Total Active</p>
             </div>
-            <p className="mt-2 text-2xl font-bold">{repairs.length}</p>
+            <p className="mt-1 lg:mt-2 text-xl lg:text-2xl font-bold">{repairs.length}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 lg:p-4">
             <div className="flex items-center space-x-2">
-              <Clock className="h-5 w-5 text-amber-500" />
-              <p className="text-sm text-slate-500">In Progress</p>
+              <Clock className="h-4 w-4 lg:h-5 lg:w-5 text-amber-500" />
+              <p className="text-xs lg:text-sm text-slate-500">In Progress</p>
             </div>
-            <p className="mt-2 text-2xl font-bold">{inProgress}</p>
+            <p className="mt-1 lg:mt-2 text-xl lg:text-2xl font-bold">{inProgress}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 lg:p-4">
             <div className="flex items-center space-x-2">
-              <CheckCircle className="h-5 w-5 text-green-500" />
-              <p className="text-sm text-slate-500">Ready for Collection</p>
+              <CheckCircle className="h-4 w-4 lg:h-5 lg:w-5 text-green-500" />
+              <p className="text-xs lg:text-sm text-slate-500">Ready</p>
             </div>
-            <p className="mt-2 text-2xl font-bold">{readyForCollection}</p>
+            <p className="mt-1 lg:mt-2 text-xl lg:text-2xl font-bold">{readyForCollection}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 lg:p-4">
             <div className="flex items-center space-x-2">
-              <AlertCircle className="h-5 w-5 text-purple-500" />
-              <p className="text-sm text-slate-500">Pending Approval</p>
+              <AlertCircle className="h-4 w-4 lg:h-5 lg:w-5 text-purple-500" />
+              <p className="text-xs lg:text-sm text-slate-500">Pending</p>
             </div>
-            <p className="mt-2 text-2xl font-bold">{pendingApproval}</p>
+            <p className="mt-1 lg:mt-2 text-xl lg:text-2xl font-bold">{pendingApproval}</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
       <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
+        <div className="relative w-64">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <Input
             placeholder="Search repairs..."
@@ -280,18 +280,18 @@ export default function RepairsPage() {
           options={statusOptions}
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="w-48"
+          className="w-44"
         />
         <Select
           options={repairTypeOptions}
           value={repairTypeFilter}
           onChange={(e) => setRepairTypeFilter(e.target.value)}
-          className="w-48"
+          className="w-40"
         />
       </div>
 
-      {/* Repairs Table */}
-      <Card>
+      {/* Repairs Table - Desktop */}
+      <Card className="hidden lg:block">
         <CardContent className="p-0">
           <Table>
             <TableHeader>
@@ -337,9 +337,40 @@ export default function RepairsPage() {
         </CardContent>
       </Card>
 
+      {/* Repair Cards - Mobile */}
+      <div className="space-y-3 lg:hidden">
+        {filteredRepairs.map((repair) => (
+          <Card key={repair.id} className="cursor-pointer active:bg-slate-50">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between mb-2">
+                <div className="min-w-0 flex-1 pr-2">
+                  <p className="font-mono font-medium text-sm">{repair.repairNumber}</p>
+                  <p className="text-sm text-slate-500">
+                    {repair.customer.firstName} {repair.customer.lastName}
+                  </p>
+                </div>
+                <Badge variant={statusColors[repair.status]} className="text-xs flex-shrink-0">
+                  {repair.status.replace(/_/g, ' ')}
+                </Badge>
+              </div>
+              <p className="text-sm font-medium truncate mb-1">{repair.itemDescription}</p>
+              <p className="text-xs text-slate-500 truncate mb-2">{repair.issueDescription}</p>
+              <div className="flex items-center justify-between text-sm">
+                <Badge variant="outline" className="text-xs">
+                  {repairTypeLabels[repair.repairType]}
+                </Badge>
+                <span className="font-medium">
+                  {repair.estimatedCost ? formatCurrency(repair.estimatedCost) : '-'}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
       {/* New Repair Modal */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="New Repair" size="lg">
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4 lg:space-y-6">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Customer *</label>
             <Select
@@ -359,7 +390,7 @@ export default function RepairsPage() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Repair Type *</label>
               <Select
@@ -414,11 +445,11 @@ export default function RepairsPage() {
             />
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4 border-t">
+            <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)} className="w-full sm:w-auto">
               Cancel
             </Button>
-            <Button type="submit">Create Repair</Button>
+            <Button type="submit" className="w-full sm:w-auto">Create Repair</Button>
           </div>
         </form>
       </Modal>

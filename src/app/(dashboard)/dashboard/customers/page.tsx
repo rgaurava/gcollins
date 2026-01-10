@@ -183,50 +183,50 @@ export default function CustomersPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 lg:space-y-6">
       {/* Page Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Customers</h1>
-          <p className="text-slate-500">Manage your customer relationships</p>
+          <h1 className="text-xl lg:text-2xl font-bold">Customers</h1>
+          <p className="text-sm lg:text-base text-slate-500">Manage your customer relationships</p>
         </div>
-        <Button onClick={() => setIsModalOpen(true)}>
+        <Button onClick={() => setIsModalOpen(true)} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           Add Customer
         </Button>
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:gap-4 lg:grid-cols-4">
         <Card>
-          <CardContent className="p-4">
-            <p className="text-sm text-slate-500">Total Customers</p>
-            <p className="text-2xl font-bold">1,243</p>
+          <CardContent className="p-3 lg:p-4">
+            <p className="text-xs lg:text-sm text-slate-500">Total Customers</p>
+            <p className="text-xl lg:text-2xl font-bold">1,243</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
-            <p className="text-sm text-slate-500">VIP Customers</p>
-            <p className="text-2xl font-bold">186</p>
+          <CardContent className="p-3 lg:p-4">
+            <p className="text-xs lg:text-sm text-slate-500">VIP Customers</p>
+            <p className="text-xl lg:text-2xl font-bold">186</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
-            <p className="text-sm text-slate-500">New This Month</p>
-            <p className="text-2xl font-bold">42</p>
+          <CardContent className="p-3 lg:p-4">
+            <p className="text-xs lg:text-sm text-slate-500">New This Month</p>
+            <p className="text-xl lg:text-2xl font-bold">42</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
-            <p className="text-sm text-slate-500">Avg. Lifetime Value</p>
-            <p className="text-2xl font-bold">{formatCurrency(28450)}</p>
+          <CardContent className="p-3 lg:p-4">
+            <p className="text-xs lg:text-sm text-slate-500">Avg. Lifetime Value</p>
+            <p className="text-xl lg:text-2xl font-bold">{formatCurrency(28450)}</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
       <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
+        <div className="relative w-64">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <Input
             placeholder="Search customers..."
@@ -239,13 +239,13 @@ export default function CustomersPage() {
           options={customerTypeOptions}
           value={customerTypeFilter}
           onChange={(e) => setCustomerTypeFilter(e.target.value)}
-          className="w-40"
+          className="w-36"
         />
         <Select
           options={vipLevelOptions}
           value={vipLevelFilter}
           onChange={(e) => setVipLevelFilter(e.target.value)}
-          className="w-40"
+          className="w-36"
         />
         <Button variant="outline">
           <Filter className="mr-2 h-4 w-4" />
@@ -253,8 +253,8 @@ export default function CustomersPage() {
         </Button>
       </div>
 
-      {/* Customer Table */}
-      <Card>
+      {/* Customer Table - Desktop */}
+      <Card className="hidden lg:block">
         <CardContent className="p-0">
           <Table>
             <TableHeader>
@@ -325,10 +325,46 @@ export default function CustomersPage() {
         </CardContent>
       </Card>
 
+      {/* Customer Cards - Mobile */}
+      <div className="space-y-3 lg:hidden">
+        {filteredCustomers.map((customer) => (
+          <Card key={customer.id} className="cursor-pointer active:bg-slate-50">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 font-medium text-sm">
+                    {getInitials(customer.firstName, customer.lastName)}
+                  </div>
+                  <div>
+                    <p className="font-medium">
+                      {customer.firstName} {customer.lastName}
+                    </p>
+                    <p className="text-sm text-slate-500">{customer.email}</p>
+                  </div>
+                </div>
+                <Badge variant={vipColors[customer.vipLevel]} className="text-xs">
+                  {customer.vipLevel}
+                </Badge>
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <p className="text-slate-500">Lifetime Value</p>
+                  <p className="font-medium">{formatCurrency(customer.lifetimeValue)}</p>
+                </div>
+                <div>
+                  <p className="text-slate-500">Orders</p>
+                  <p className="font-medium">{customer.totalOrders}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
       {/* Add Customer Modal */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Add New Customer" size="lg">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="space-y-4 lg:space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">First Name *</label>
               <Input
@@ -349,7 +385,7 @@ export default function CustomersPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Email *</label>
               <Input
@@ -370,7 +406,7 @@ export default function CustomersPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Customer Type</label>
               <Select
@@ -417,7 +453,7 @@ export default function CustomersPage() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">City</label>
               <Input
@@ -446,11 +482,11 @@ export default function CustomersPage() {
             />
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4 border-t">
+            <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)} className="w-full sm:w-auto">
               Cancel
             </Button>
-            <Button type="submit">Create Customer</Button>
+            <Button type="submit" className="w-full sm:w-auto">Create Customer</Button>
           </div>
         </form>
       </Modal>

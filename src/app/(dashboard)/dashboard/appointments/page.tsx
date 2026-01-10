@@ -211,62 +211,62 @@ export default function AppointmentsPage() {
   })
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 lg:space-y-6">
       {/* Page Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Appointments</h1>
-          <p className="text-slate-500">Schedule and manage customer appointments</p>
+          <h1 className="text-xl lg:text-2xl font-bold">Appointments</h1>
+          <p className="text-sm lg:text-base text-slate-500">Schedule and manage customer appointments</p>
         </div>
-        <Button onClick={() => setIsModalOpen(true)}>
+        <Button onClick={() => setIsModalOpen(true)} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           Book Appointment
         </Button>
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:gap-4 lg:grid-cols-4">
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 lg:p-4">
             <div className="flex items-center space-x-2">
-              <Calendar className="h-5 w-5 text-blue-500" />
-              <p className="text-sm text-slate-500">Today</p>
+              <Calendar className="h-4 w-4 lg:h-5 lg:w-5 text-blue-500" />
+              <p className="text-xs lg:text-sm text-slate-500">Today</p>
             </div>
-            <p className="mt-2 text-2xl font-bold">{todayAppointments.length}</p>
+            <p className="mt-1 lg:mt-2 text-xl lg:text-2xl font-bold">{todayAppointments.length}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 lg:p-4">
             <div className="flex items-center space-x-2">
-              <Clock className="h-5 w-5 text-amber-500" />
-              <p className="text-sm text-slate-500">This Week</p>
+              <Clock className="h-4 w-4 lg:h-5 lg:w-5 text-amber-500" />
+              <p className="text-xs lg:text-sm text-slate-500">This Week</p>
             </div>
-            <p className="mt-2 text-2xl font-bold">12</p>
+            <p className="mt-1 lg:mt-2 text-xl lg:text-2xl font-bold">12</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 lg:p-4">
             <div className="flex items-center space-x-2">
-              <Video className="h-5 w-5 text-purple-500" />
-              <p className="text-sm text-slate-500">Virtual</p>
+              <Video className="h-4 w-4 lg:h-5 lg:w-5 text-purple-500" />
+              <p className="text-xs lg:text-sm text-slate-500">Virtual</p>
             </div>
-            <p className="mt-2 text-2xl font-bold">3</p>
+            <p className="mt-1 lg:mt-2 text-xl lg:text-2xl font-bold">3</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 lg:p-4">
             <div className="flex items-center space-x-2">
-              <User className="h-5 w-5 text-green-500" />
-              <p className="text-sm text-slate-500">Bespoke Consultations</p>
+              <User className="h-4 w-4 lg:h-5 lg:w-5 text-green-500" />
+              <p className="text-xs lg:text-sm text-slate-500">Bespoke</p>
             </div>
-            <p className="mt-2 text-2xl font-bold">5</p>
+            <p className="mt-1 lg:mt-2 text-xl lg:text-2xl font-bold">5</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
       <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
+        <div className="relative w-64">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <Input
             placeholder="Search appointments..."
@@ -279,7 +279,7 @@ export default function AppointmentsPage() {
           options={typeOptions}
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
-          className="w-48"
+          className="w-44"
         />
         <Select
           options={statusOptions}
@@ -290,46 +290,50 @@ export default function AppointmentsPage() {
       </div>
 
       {/* Appointments List */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         {filteredAppointments.map((apt) => (
           <Card key={apt.id} className="cursor-pointer hover:shadow-md transition-shadow">
             <CardContent className="p-4">
-              <div className="flex items-start justify-between">
-                <div className="flex items-start space-x-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-amber-100">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                <div className="flex items-start space-x-3 sm:space-x-4">
+                  <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-lg bg-amber-100 flex-shrink-0">
                     {apt.type === 'VIRTUAL_CONSULTATION' ? (
-                      <Video className="h-6 w-6 text-amber-600" />
+                      <Video className="h-5 w-5 sm:h-6 sm:w-6 text-amber-600" />
                     ) : (
-                      <Calendar className="h-6 w-6 text-amber-600" />
+                      <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-amber-600" />
                     )}
                   </div>
-                  <div>
-                    <h3 className="font-semibold">{apt.title}</h3>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-semibold text-sm sm:text-base truncate">{apt.title}</h3>
                     <p className="text-sm text-slate-500">
                       {apt.customer.firstName} {apt.customer.lastName}
                     </p>
-                    <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-slate-500">
+                    <div className="mt-2 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm text-slate-500">
                       <div className="flex items-center">
-                        <Clock className="mr-1 h-4 w-4" />
-                        {formatDateTime(apt.startTime)} ({apt.duration} min)
+                        <Clock className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+                        <span className="truncate">{formatDateTime(apt.startTime)} ({apt.duration} min)</span>
                       </div>
                       <div className="flex items-center">
-                        <MapPin className="mr-1 h-4 w-4" />
+                        <MapPin className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
                         {apt.location}
                       </div>
-                      <div className="flex items-center">
+                      <div className="hidden sm:flex items-center">
                         <User className="mr-1 h-4 w-4" />
                         {apt.host.firstName} {apt.host.lastName}
                       </div>
                     </div>
                     {apt.notes && (
-                      <p className="mt-2 text-sm text-slate-600">{apt.notes}</p>
+                      <p className="mt-2 text-xs sm:text-sm text-slate-600 line-clamp-2">{apt.notes}</p>
                     )}
                   </div>
                 </div>
-                <div className="flex flex-col items-end space-y-2">
-                  <Badge variant={statusColors[apt.status]}>{apt.status.replace('_', ' ')}</Badge>
-                  <Badge variant="outline">{typeLabels[apt.type]}</Badge>
+                <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2 flex-shrink-0">
+                  <Badge variant={statusColors[apt.status]} className="text-xs">
+                    {apt.status.replace('_', ' ')}
+                  </Badge>
+                  <Badge variant="outline" className="text-xs">
+                    {typeLabels[apt.type]}
+                  </Badge>
                 </div>
               </div>
             </CardContent>
@@ -339,7 +343,7 @@ export default function AppointmentsPage() {
 
       {/* Book Appointment Modal */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Book Appointment" size="lg">
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4 lg:space-y-6">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Appointment Title *</label>
             <Input
@@ -350,7 +354,7 @@ export default function AppointmentsPage() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Customer *</label>
               <Select
@@ -369,7 +373,7 @@ export default function AppointmentsPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Host *</label>
               <Select
@@ -388,7 +392,7 @@ export default function AppointmentsPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Date *</label>
               <Input
@@ -408,11 +412,11 @@ export default function AppointmentsPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Duration (min)</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Duration</label>
               <Select
                 options={[
-                  { value: '30', label: '30 minutes' },
-                  { value: '45', label: '45 minutes' },
+                  { value: '30', label: '30 min' },
+                  { value: '45', label: '45 min' },
                   { value: '60', label: '1 hour' },
                   { value: '90', label: '1.5 hours' },
                   { value: '120', label: '2 hours' },
@@ -433,11 +437,11 @@ export default function AppointmentsPage() {
             />
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4 border-t">
+            <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)} className="w-full sm:w-auto">
               Cancel
             </Button>
-            <Button type="submit">Book Appointment</Button>
+            <Button type="submit" className="w-full sm:w-auto">Book Appointment</Button>
           </div>
         </form>
       </Modal>
