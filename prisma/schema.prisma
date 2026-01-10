@@ -1,0 +1,1618 @@
+// G. Collins & Sons - Smart Platform Database Schema
+// Comprehensive schema for CRM, Inventory, Supply Chain & E-Commerce
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================
+// AUTHENTICATION & USER MANAGEMENT
+// ============================================
+
+model User {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  passwordHash   String
+  firstName      String
+  lastName       String
+  role           UserRole  @default(SALES_ASSOCIATE)
+  isActive       Boolean   @default(true)
+  phone          String?
+  avatarUrl      String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Relations
+  assignedCustomers Customer[]      @relation("AssignedSalesAssociate")
+  createdOrders     Order[]         @relation("OrderCreatedBy")
+  interactions      Interaction[]
+  appointments      Appointment[]   @relation("AppointmentHost")
+  auditLogs         AuditLog[]
+  notifications     Notification[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  STORE_MANAGER
+  SALES_ASSOCIATE
+  INVENTORY_MANAGER
+  FINANCE
+  WORKSHOP_MANAGER
+}
+
+// ============================================
+// CRM - CUSTOMER MANAGEMENT
+// ============================================
+
+model Customer {
+  id                  String           @id @default(cuid())
+  email               String?          @unique
+  firstName           String
+  lastName            String
+  phone               String?
+  whatsappNumber      String?
+  preferredContact    ContactMethod    @default(EMAIL)
+
+  // Address
+  addressLine1        String?
+  addressLine2        String?
+  city                String?
+  county              String?
+  postcode            String?
+  country             String           @default("United Kingdom")
+
+  // Customer Profile
+  customerType        CustomerType     @default(INDIVIDUAL)
+  vipLevel            VIPLevel         @default(STANDARD)
+  source              String?          // How they found us
+
+  // Preferences (JSONB for flexibility)
+  preferences         Json?            // Ring sizes, metal preferences, etc.
+
+  // Important Dates
+  dateOfBirth         DateTime?
+  anniversary         DateTime?
+
+  // Metrics
+  lifetimeValue       Decimal          @default(0) @db.Decimal(12, 2)
+  totalOrders         Int              @default(0)
+  lastPurchaseDate    DateTime?
+
+  // Assignment
+  assignedToId        String?
+  assignedTo          User?            @relation("AssignedSalesAssociate", fields: [assignedToId], references: [id])
+
+  // Timestamps
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  // Relations
+  household           Household?       @relation(fields: [householdId], references: [id])
+  householdId         String?
+  orders              Order[]
+  interactions        Interaction[]
+  appointments        Appointment[]
+  wishlistItems       WishlistItem[]
+  repairs             Repair[]
+  valuations          Valuation[]
+  consignments        Consignment[]
+
+  @@index([email])
+  @@index([lastName, firstName])
+  @@index([assignedToId])
+  @@map("customers")
+}
+
+model Household {
+  id           String     @id @default(cuid())
+  name         String
+  notes        String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  members      Customer[]
+
+  @@map("households")
+}
+
+enum CustomerType {
+  INDIVIDUAL
+  CORPORATE
+  TRADE
+}
+
+enum VIPLevel {
+  STANDARD
+  SILVER
+  GOLD
+  PLATINUM
+  COLLECTOR
+}
+
+enum ContactMethod {
+  EMAIL
+  PHONE
+  WHATSAPP
+  POST
+}
+
+// ============================================
+// CRM - INTERACTIONS & APPOINTMENTS
+// ============================================
+
+model Interaction {
+  id            String          @id @default(cuid())
+  type          InteractionType
+  subject       String
+  notes         String?
+  outcome       String?
+
+  // Participants
+  customerId    String
+  customer      Customer        @relation(fields: [customerId], references: [id])
+  userId        String
+  user          User            @relation(fields: [userId], references: [id])
+
+  // Follow-up
+  followUpDate  DateTime?
+  followUpDone  Boolean         @default(false)
+
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([customerId])
+  @@index([userId])
+  @@map("interactions")
+}
+
+enum InteractionType {
+  PHONE_CALL
+  EMAIL
+  WHATSAPP
+  IN_STORE_VISIT
+  VIDEO_CALL
+  NOTE
+}
+
+model Appointment {
+  id            String            @id @default(cuid())
+  type          AppointmentType
+  title         String
+  description   String?
+
+  // Timing
+  startTime     DateTime
+  endTime       DateTime
+  duration      Int               // minutes
+
+  // Status
+  status        AppointmentStatus @default(SCHEDULED)
+
+  // Participants
+  customerId    String
+  customer      Customer          @relation(fields: [customerId], references: [id])
+  hostId        String
+  host          User              @relation("AppointmentHost", fields: [hostId], references: [id])
+
+  // Location
+  location      String?           // Store, Virtual, etc.
+  meetingLink   String?           // For virtual appointments
+
+  // Notes
+  notes         String?
+  outcome       String?
+
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@index([customerId])
+  @@index([hostId])
+  @@index([startTime])
+  @@map("appointments")
+}
+
+enum AppointmentType {
+  CONSULTATION
+  BESPOKE_DESIGN
+  VIEWING
+  COLLECTION
+  REPAIR_DROP_OFF
+  REPAIR_COLLECTION
+  VALUATION
+  VIRTUAL_CONSULTATION
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+// ============================================
+// INVENTORY - PRODUCTS & CATEGORIES
+// ============================================
+
+model Category {
+  id            String     @id @default(cuid())
+  name          String     @unique
+  slug          String     @unique
+  description   String?
+  imageUrl      String?
+  parentId      String?
+  parent        Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children      Category[] @relation("CategoryHierarchy")
+  sortOrder     Int        @default(0)
+  isActive      Boolean    @default(true)
+
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  products      Product[]
+
+  @@map("categories")
+}
+
+model Collection {
+  id            String    @id @default(cuid())
+  name          String    @unique
+  slug          String    @unique
+  description   String?
+  imageUrl      String?
+  isActive      Boolean   @default(true)
+  sortOrder     Int       @default(0)
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  products      Product[]
+
+  @@map("collections")
+}
+
+model Product {
+  id                String          @id @default(cuid())
+  sku               String          @unique
+  name              String
+  slug              String          @unique
+  description       String?
+  shortDescription  String?
+
+  // Pricing
+  price             Decimal?        @db.Decimal(12, 2)
+  costPrice         Decimal?        @db.Decimal(12, 2)
+  compareAtPrice    Decimal?        @db.Decimal(12, 2)
+  isPOA             Boolean         @default(false) // Price on Application
+  currency          Currency        @default(GBP)
+
+  // Product Classification
+  productType       ProductType
+  status            ProductStatus   @default(DRAFT)
+
+  // Category & Collection
+  categoryId        String?
+  category          Category?       @relation(fields: [categoryId], references: [id])
+  collectionId      String?
+  collection        Collection?     @relation(fields: [collectionId], references: [id])
+
+  // Physical Attributes (JSONB for flexibility)
+  attributes        Json?           // Weight, dimensions, etc.
+
+  // Jewelry-Specific
+  metalType         MetalType?
+  metalPurity       String?         // 18ct, 9ct, 950, etc.
+
+  // SEO
+  metaTitle         String?
+  metaDescription   String?
+
+  // Flags
+  isFeatured        Boolean         @default(false)
+  isNew             Boolean         @default(false)
+  isOnSale          Boolean         @default(false)
+
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  // Relations
+  images            ProductImage[]
+  variants          ProductVariant[]
+  components        ProductComponent[]
+  inventoryItems    InventoryItem[]
+  orderItems        OrderItem[]
+  wishlistItems     WishlistItem[]
+  priceHistory      PriceHistory[]
+  watch             Watch?
+
+  @@index([sku])
+  @@index([slug])
+  @@index([categoryId])
+  @@index([productType])
+  @@map("products")
+}
+
+model ProductImage {
+  id          String   @id @default(cuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url         String
+  altText     String?
+  sortOrder   Int      @default(0)
+  isPrimary   Boolean  @default(false)
+
+  createdAt   DateTime @default(now())
+
+  @@index([productId])
+  @@map("product_images")
+}
+
+model ProductVariant {
+  id            String          @id @default(cuid())
+  productId     String
+  product       Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku           String          @unique
+  name          String          // e.g., "Size L", "Yellow Gold"
+
+  // Pricing (if different from main product)
+  price         Decimal?        @db.Decimal(12, 2)
+  costPrice     Decimal?        @db.Decimal(12, 2)
+
+  // Variant Attributes
+  attributes    Json?           // Ring size, length, etc.
+
+  // Stock
+  stockQuantity Int             @default(0)
+
+  isActive      Boolean         @default(true)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  inventoryItems InventoryItem[]
+  orderItems     OrderItem[]
+
+  @@index([productId])
+  @@map("product_variants")
+}
+
+model ProductComponent {
+  id              String    @id @default(cuid())
+  productId       String
+  product         Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  componentType   ComponentType
+  description     String
+
+  // For gemstones
+  stoneId         String?
+  stone           Stone?    @relation(fields: [stoneId], references: [id])
+
+  // Quantity
+  quantity        Int       @default(1)
+
+  // Additional details
+  details         Json?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([productId])
+  @@map("product_components")
+}
+
+enum ProductType {
+  FINISHED_JEWELRY
+  LOOSE_STONE
+  WATCH
+  ACCESSORY
+  GIFT_CARD
+  SERVICE
+  CUSTOM_ORDER
+  ANTIQUE
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+  OUT_OF_STOCK
+  DISCONTINUED
+}
+
+enum MetalType {
+  PLATINUM
+  YELLOW_GOLD
+  WHITE_GOLD
+  ROSE_GOLD
+  STERLING_SILVER
+  STAINLESS_STEEL
+  TITANIUM
+  PALLADIUM
+}
+
+enum ComponentType {
+  SETTING
+  MAIN_STONE
+  SIDE_STONE
+  ACCENT_STONE
+  BAND
+  CLASP
+  CHAIN
+}
+
+enum Currency {
+  GBP
+  USD
+  EUR
+  CHF
+}
+
+// ============================================
+// INVENTORY - GEMSTONES & CERTIFICATIONS
+// ============================================
+
+model Stone {
+  id                String            @id @default(cuid())
+  sku               String            @unique
+  stoneType         StoneType
+
+  // The 4 Cs (for diamonds)
+  caratWeight       Decimal?          @db.Decimal(6, 3)
+  color             String?           // D-Z for diamonds, or descriptive
+  clarity           String?           // FL, IF, VVS1, etc.
+  cut               String?           // Excellent, Very Good, etc.
+
+  // Shape & Dimensions
+  shape             StoneShape?
+  lengthMm          Decimal?          @db.Decimal(6, 2)
+  widthMm           Decimal?          @db.Decimal(6, 2)
+  depthMm           Decimal?          @db.Decimal(6, 2)
+
+  // Additional Grading
+  polish            String?
+  symmetry          String?
+  fluorescence      String?
+
+  // Pricing
+  costPrice         Decimal?          @db.Decimal(12, 2)
+  retailPrice       Decimal?          @db.Decimal(12, 2)
+
+  // Certification
+  certificationId   String?
+  certification     Certification?    @relation(fields: [certificationId], references: [id])
+
+  // Status
+  status            StoneStatus       @default(AVAILABLE)
+  locationId        String?
+  location          Location?         @relation(fields: [locationId], references: [id])
+
+  // Origin
+  origin            String?
+  isLabGrown        Boolean           @default(false)
+
+  // Additional attributes
+  attributes        Json?
+
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  // Relations
+  productComponents ProductComponent[]
+  images            StoneImage[]
+
+  @@index([sku])
+  @@index([stoneType])
+  @@map("stones")
+}
+
+model StoneImage {
+  id        String   @id @default(cuid())
+  stoneId   String
+  stone     Stone    @relation(fields: [stoneId], references: [id], onDelete: Cascade)
+  url       String
+  type      String?  // main, certificate, etc.
+
+  createdAt DateTime @default(now())
+
+  @@map("stone_images")
+}
+
+model Certification {
+  id                  String    @id @default(cuid())
+  certificateNumber   String    @unique
+  laboratory          CertLab
+  issueDate           DateTime
+
+  // Certificate Details (stored for reference)
+  details             Json?
+
+  // Document
+  documentUrl         String?
+  verificationUrl     String?
+
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  stones              Stone[]
+
+  @@map("certifications")
+}
+
+enum StoneType {
+  DIAMOND
+  EMERALD
+  RUBY
+  SAPPHIRE
+  AQUAMARINE
+  TANZANITE
+  OPAL
+  PEARL
+  AMETHYST
+  TOPAZ
+  TOURMALINE
+  GARNET
+  PERIDOT
+  CITRINE
+  MORGANITE
+  OTHER
+}
+
+enum StoneShape {
+  ROUND_BRILLIANT
+  PRINCESS
+  EMERALD_CUT
+  ASSCHER
+  CUSHION
+  RADIANT
+  OVAL
+  MARQUISE
+  PEAR
+  HEART
+  BAGUETTE
+  TRILLION
+  HEXAGONAL
+}
+
+enum StoneStatus {
+  AVAILABLE
+  RESERVED
+  SET
+  SOLD
+  ON_MEMO
+}
+
+enum CertLab {
+  GIA
+  IGI
+  AGS
+  HRD
+  EGL
+  GCAL
+  OTHER
+}
+
+// ============================================
+// INVENTORY - WATCHES (Special handling for authorized dealer)
+// ============================================
+
+model Watch {
+  id                String          @id @default(cuid())
+  productId         String          @unique
+  product           Product         @relation(fields: [productId], references: [id])
+
+  // Brand & Model
+  brand             WatchBrand
+  modelName         String
+  referenceNumber   String
+
+  // Movement
+  movementType      MovementType
+  caliber           String?
+  powerReserve      Int?            // hours
+
+  // Case
+  caseMaterial      String?
+  caseSize          Decimal?        @db.Decimal(4, 1)  // mm
+  waterResistance   Int?            // meters
+
+  // Dial & Features
+  dialColor         String?
+  complications     String[]        // Array of complications
+
+  // Papers & Box
+  hasBox            Boolean         @default(false)
+  hasPapers         Boolean         @default(false)
+  warrantyEnd       DateTime?
+
+  // Service History
+  lastServiceDate   DateTime?
+
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  serviceRecords    WatchService[]
+
+  @@map("watches")
+}
+
+model WatchService {
+  id            String    @id @default(cuid())
+  watchId       String
+  watch         Watch     @relation(fields: [watchId], references: [id])
+
+  serviceDate   DateTime
+  serviceType   String    // Full service, polish, movement service, etc.
+  provider      String    // In-house or manufacturer
+  cost          Decimal?  @db.Decimal(10, 2)
+  notes         String?
+
+  createdAt     DateTime  @default(now())
+
+  @@index([watchId])
+  @@map("watch_services")
+}
+
+enum WatchBrand {
+  PATEK_PHILIPPE
+  CARTIER
+  ROLEX
+  OMEGA
+  FOPE
+  OTHER
+}
+
+enum MovementType {
+  AUTOMATIC
+  MANUAL
+  QUARTZ
+}
+
+// ============================================
+// INVENTORY - STOCK MANAGEMENT
+// ============================================
+
+model Location {
+  id          String          @id @default(cuid())
+  name        String          @unique
+  type        LocationType
+  address     String?
+  isActive    Boolean         @default(true)
+
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  inventory   InventoryItem[]
+  stones      Stone[]
+  stockMovements StockMovement[]
+
+  @@map("locations")
+}
+
+enum LocationType {
+  SHOWROOM
+  VAULT
+  WORKSHOP
+  WAREHOUSE
+  CONSIGNMENT
+}
+
+model InventoryItem {
+  id              String            @id @default(cuid())
+
+  // Product Reference
+  productId       String?
+  product         Product?          @relation(fields: [productId], references: [id])
+  variantId       String?
+  variant         ProductVariant?   @relation(fields: [variantId], references: [id])
+
+  // Serial Number (for high-value items)
+  serialNumber    String?           @unique
+
+  // Location
+  locationId      String
+  location        Location          @relation(fields: [locationId], references: [id])
+
+  // Quantity
+  quantity        Int               @default(1)
+  reservedQty     Int               @default(0)
+
+  // Status
+  status          InventoryStatus   @default(IN_STOCK)
+
+  // Valuation
+  costPrice       Decimal?          @db.Decimal(12, 2)
+
+  // Condition
+  condition       ItemCondition     @default(NEW)
+  conditionNotes  String?
+
+  // Timestamps
+  receivedDate    DateTime          @default(now())
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  stockMovements  StockMovement[]
+
+  @@index([productId])
+  @@index([locationId])
+  @@index([serialNumber])
+  @@map("inventory_items")
+}
+
+model StockMovement {
+  id              String          @id @default(cuid())
+  inventoryItemId String
+  inventoryItem   InventoryItem   @relation(fields: [inventoryItemId], references: [id])
+
+  type            MovementType_Stock
+  quantity        Int
+
+  fromLocationId  String?
+  fromLocation    Location?       @relation(fields: [fromLocationId], references: [id])
+
+  toLocationId    String?
+
+  // Reference
+  referenceType   String?         // Order, PurchaseOrder, Repair, etc.
+  referenceId     String?
+
+  notes           String?
+  performedBy     String?
+
+  createdAt       DateTime        @default(now())
+
+  @@index([inventoryItemId])
+  @@map("stock_movements")
+}
+
+enum InventoryStatus {
+  IN_STOCK
+  RESERVED
+  SOLD
+  IN_REPAIR
+  ON_DISPLAY
+  IN_TRANSIT
+  ON_MEMO
+  RETURNED
+}
+
+enum ItemCondition {
+  NEW
+  LIKE_NEW
+  EXCELLENT
+  VERY_GOOD
+  GOOD
+  FAIR
+}
+
+enum MovementType_Stock {
+  RECEIVED
+  SOLD
+  TRANSFERRED
+  RESERVED
+  RELEASED
+  ADJUSTED
+  RETURNED
+  CONSIGNED_IN
+  CONSIGNED_OUT
+}
+
+// ============================================
+// INVENTORY - PRICE HISTORY
+// ============================================
+
+model PriceHistory {
+  id          String    @id @default(cuid())
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id])
+
+  oldPrice    Decimal?  @db.Decimal(12, 2)
+  newPrice    Decimal?  @db.Decimal(12, 2)
+  currency    Currency  @default(GBP)
+
+  reason      String?
+  changedBy   String?
+
+  createdAt   DateTime  @default(now())
+
+  @@index([productId])
+  @@map("price_history")
+}
+
+// ============================================
+// SUPPLY CHAIN - VENDORS
+// ============================================
+
+model Vendor {
+  id              String          @id @default(cuid())
+  name            String
+  code            String          @unique
+
+  // Contact
+  email           String?
+  phone           String?
+  website         String?
+
+  // Address
+  addressLine1    String?
+  addressLine2    String?
+  city            String?
+  country         String?
+  postcode        String?
+
+  // Business Details
+  vendorType      VendorType
+  categories      String[]        // What they supply
+  paymentTerms    String?         // Net 30, etc.
+
+  // Performance Metrics
+  reliabilityScore  Decimal?      @db.Decimal(3, 2)  // 0.00 - 1.00
+  averageLeadDays   Int?
+
+  // Compliance
+  taxId           String?
+  isApproved      Boolean         @default(false)
+
+  // Notes
+  notes           String?
+
+  isActive        Boolean         @default(true)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  purchaseOrders  PurchaseOrder[]
+  vendorContacts  VendorContact[]
+
+  @@map("vendors")
+}
+
+model VendorContact {
+  id          String    @id @default(cuid())
+  vendorId    String
+  vendor      Vendor    @relation(fields: [vendorId], references: [id])
+
+  name        String
+  email       String?
+  phone       String?
+  role        String?
+  isPrimary   Boolean   @default(false)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([vendorId])
+  @@map("vendor_contacts")
+}
+
+enum VendorType {
+  MANUFACTURER
+  WHOLESALER
+  STONE_SUPPLIER
+  METAL_SUPPLIER
+  WATCH_BRAND
+  SERVICE_PROVIDER
+}
+
+// ============================================
+// SUPPLY CHAIN - PURCHASE ORDERS
+// ============================================
+
+model PurchaseOrder {
+  id              String            @id @default(cuid())
+  orderNumber     String            @unique
+
+  vendorId        String
+  vendor          Vendor            @relation(fields: [vendorId], references: [id])
+
+  status          POStatus          @default(DRAFT)
+
+  // Dates
+  orderDate       DateTime          @default(now())
+  expectedDate    DateTime?
+  receivedDate    DateTime?
+
+  // Totals
+  subtotal        Decimal           @db.Decimal(12, 2)
+  tax             Decimal           @default(0) @db.Decimal(12, 2)
+  shipping        Decimal           @default(0) @db.Decimal(12, 2)
+  total           Decimal           @db.Decimal(12, 2)
+  currency        Currency          @default(GBP)
+
+  // Notes
+  notes           String?
+  internalNotes   String?
+
+  createdBy       String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  items           PurchaseOrderItem[]
+  receipts        PurchaseReceipt[]
+
+  @@index([vendorId])
+  @@index([orderNumber])
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id                String         @id @default(cuid())
+  purchaseOrderId   String
+  purchaseOrder     PurchaseOrder  @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+
+  description       String
+  sku               String?
+  quantity          Int
+  receivedQty       Int            @default(0)
+  unitPrice         Decimal        @db.Decimal(12, 2)
+  totalPrice        Decimal        @db.Decimal(12, 2)
+
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  @@index([purchaseOrderId])
+  @@map("purchase_order_items")
+}
+
+model PurchaseReceipt {
+  id              String         @id @default(cuid())
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder  @relation(fields: [purchaseOrderId], references: [id])
+
+  receiptNumber   String         @unique
+  receivedDate    DateTime       @default(now())
+  receivedBy      String?
+
+  // Items received (JSONB for flexibility)
+  itemsReceived   Json
+
+  notes           String?
+
+  createdAt       DateTime       @default(now())
+
+  @@index([purchaseOrderId])
+  @@map("purchase_receipts")
+}
+
+enum POStatus {
+  DRAFT
+  SUBMITTED
+  CONFIRMED
+  PARTIALLY_RECEIVED
+  RECEIVED
+  CANCELLED
+}
+
+// ============================================
+// E-COMMERCE - ORDERS
+// ============================================
+
+model Order {
+  id                String          @id @default(cuid())
+  orderNumber       String          @unique
+
+  // Customer
+  customerId        String
+  customer          Customer        @relation(fields: [customerId], references: [id])
+
+  // Order Type & Status
+  orderType         OrderType       @default(STANDARD)
+  status            OrderStatus     @default(PENDING)
+
+  // Channel
+  channel           SalesChannel    @default(ONLINE)
+
+  // Pricing
+  subtotal          Decimal         @db.Decimal(12, 2)
+  taxAmount         Decimal         @default(0) @db.Decimal(12, 2)
+  shippingAmount    Decimal         @default(0) @db.Decimal(12, 2)
+  discountAmount    Decimal         @default(0) @db.Decimal(12, 2)
+  totalAmount       Decimal         @db.Decimal(12, 2)
+  currency          Currency        @default(GBP)
+
+  // Shipping Address
+  shippingName      String?
+  shippingLine1     String?
+  shippingLine2     String?
+  shippingCity      String?
+  shippingCounty    String?
+  shippingPostcode  String?
+  shippingCountry   String?
+
+  // Billing Address
+  billingName       String?
+  billingLine1      String?
+  billingLine2      String?
+  billingCity       String?
+  billingCounty     String?
+  billingPostcode   String?
+  billingCountry    String?
+
+  // Notes
+  customerNotes     String?
+  internalNotes     String?
+
+  // Attribution
+  createdById       String?
+  createdBy         User?           @relation("OrderCreatedBy", fields: [createdById], references: [id])
+
+  // Timestamps
+  placedAt          DateTime        @default(now())
+  paidAt            DateTime?
+  shippedAt         DateTime?
+  deliveredAt       DateTime?
+  cancelledAt       DateTime?
+
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  // Relations
+  items             OrderItem[]
+  payments          Payment[]
+  shipments         Shipment[]
+  customOrder       CustomOrder?
+
+  @@index([customerId])
+  @@index([orderNumber])
+  @@index([status])
+  @@map("orders")
+}
+
+model OrderItem {
+  id              String          @id @default(cuid())
+  orderId         String
+  order           Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  // Product Reference
+  productId       String?
+  product         Product?        @relation(fields: [productId], references: [id])
+  variantId       String?
+  variant         ProductVariant? @relation(fields: [variantId], references: [id])
+
+  // Item Details (captured at time of order)
+  sku             String
+  name            String
+  description     String?
+
+  // Pricing
+  quantity        Int
+  unitPrice       Decimal         @db.Decimal(12, 2)
+  totalPrice      Decimal         @db.Decimal(12, 2)
+
+  // Customization
+  customization   Json?           // Engraving, ring size, etc.
+
+  // Fulfillment
+  fulfilledQty    Int             @default(0)
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+// ============================================
+// E-COMMERCE - CUSTOM ORDERS (Bespoke)
+// ============================================
+
+model CustomOrder {
+  id              String              @id @default(cuid())
+  orderId         String              @unique
+  order           Order               @relation(fields: [orderId], references: [id])
+
+  // Design Brief
+  brief           String
+  requirements    Json?               // Detailed requirements
+
+  // Design Files
+  designFiles     String[]            // URLs to design files
+
+  // Stages
+  stage           CustomOrderStage    @default(BRIEF)
+
+  // Estimates
+  estimatedCost   Decimal?            @db.Decimal(12, 2)
+  actualCost      Decimal?            @db.Decimal(12, 2)
+
+  // Timeline
+  designApprovedAt    DateTime?
+  productionStartedAt DateTime?
+  completedAt         DateTime?
+
+  // Notes
+  designNotes     String?
+  productionNotes String?
+
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  milestones      CustomOrderMilestone[]
+
+  @@map("custom_orders")
+}
+
+model CustomOrderMilestone {
+  id              String       @id @default(cuid())
+  customOrderId   String
+  customOrder     CustomOrder  @relation(fields: [customOrderId], references: [id])
+
+  title           String
+  description     String?
+  completedAt     DateTime?
+
+  sortOrder       Int          @default(0)
+
+  createdAt       DateTime     @default(now())
+
+  @@index([customOrderId])
+  @@map("custom_order_milestones")
+}
+
+enum CustomOrderStage {
+  BRIEF
+  DESIGN_IN_PROGRESS
+  DESIGN_REVIEW
+  DESIGN_APPROVED
+  SOURCING_MATERIALS
+  IN_PRODUCTION
+  QUALITY_CHECK
+  READY_FOR_COLLECTION
+  COMPLETED
+}
+
+enum OrderType {
+  STANDARD
+  CUSTOM
+  REPAIR
+  TRADE_IN
+  CONSIGNMENT_SALE
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  AWAITING_PAYMENT
+  PAID
+  IN_PRODUCTION
+  READY_FOR_PICKUP
+  SHIPPED
+  DELIVERED
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
+enum SalesChannel {
+  ONLINE
+  IN_STORE
+  PHONE
+  WHATSAPP
+  EMAIL
+}
+
+// ============================================
+// E-COMMERCE - PAYMENTS
+// ============================================
+
+model Payment {
+  id              String          @id @default(cuid())
+  orderId         String
+  order           Order           @relation(fields: [orderId], references: [id])
+
+  amount          Decimal         @db.Decimal(12, 2)
+  currency        Currency        @default(GBP)
+
+  method          PaymentMethod
+  status          PaymentStatus   @default(PENDING)
+
+  // Provider Details
+  providerRef     String?         // Stripe payment ID, etc.
+  providerData    Json?
+
+  // For deposits/instalments
+  paymentType     PaymentType     @default(FULL)
+
+  processedAt     DateTime?
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([orderId])
+  @@map("payments")
+}
+
+enum PaymentMethod {
+  CARD
+  BANK_TRANSFER
+  CASH
+  CHECK
+  FINANCE
+  GIFT_CARD
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum PaymentType {
+  DEPOSIT
+  INSTALMENT
+  FULL
+  BALANCE
+}
+
+// ============================================
+// E-COMMERCE - SHIPPING
+// ============================================
+
+model Shipment {
+  id              String          @id @default(cuid())
+  orderId         String
+  order           Order           @relation(fields: [orderId], references: [id])
+
+  carrier         String?
+  trackingNumber  String?
+  trackingUrl     String?
+
+  status          ShipmentStatus  @default(PENDING)
+
+  shippedAt       DateTime?
+  deliveredAt     DateTime?
+
+  // Insurance
+  insuredValue    Decimal?        @db.Decimal(12, 2)
+
+  notes           String?
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([orderId])
+  @@map("shipments")
+}
+
+enum ShipmentStatus {
+  PENDING
+  PICKED_UP
+  IN_TRANSIT
+  OUT_FOR_DELIVERY
+  DELIVERED
+  RETURNED
+}
+
+// ============================================
+// SERVICES - REPAIRS
+// ============================================
+
+model Repair {
+  id              String          @id @default(cuid())
+  repairNumber    String          @unique
+
+  // Customer
+  customerId      String
+  customer        Customer        @relation(fields: [customerId], references: [id])
+
+  // Item Details
+  itemDescription String
+  itemPhotos      String[]
+
+  // Repair Details
+  issueDescription String
+  repairType      RepairType
+
+  // Estimate
+  estimatedCost   Decimal?        @db.Decimal(10, 2)
+  actualCost      Decimal?        @db.Decimal(10, 2)
+  estimatedDays   Int?
+
+  // Status
+  status          RepairStatus    @default(INTAKE)
+
+  // Workshop Notes
+  workshopNotes   String?
+
+  // Dates
+  intakeDate      DateTime        @default(now())
+  approvedDate    DateTime?
+  completedDate   DateTime?
+  collectedDate   DateTime?
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([customerId])
+  @@index([repairNumber])
+  @@map("repairs")
+}
+
+enum RepairType {
+  RESIZE
+  POLISH
+  RHODIUM_PLATE
+  STONE_REPLACEMENT
+  CLASP_REPAIR
+  CHAIN_REPAIR
+  PRONG_RETIPPING
+  FULL_RESTORATION
+  CLEANING
+  ENGRAVING
+  OTHER
+}
+
+enum RepairStatus {
+  INTAKE
+  ESTIMATE_PENDING
+  ESTIMATE_SENT
+  APPROVED
+  IN_PROGRESS
+  QUALITY_CHECK
+  READY_FOR_COLLECTION
+  COLLECTED
+  CANCELLED
+}
+
+// ============================================
+// SERVICES - VALUATIONS
+// ============================================
+
+model Valuation {
+  id                String            @id @default(cuid())
+  valuationNumber   String            @unique
+
+  customerId        String
+  customer          Customer          @relation(fields: [customerId], references: [id])
+
+  // Item Details
+  itemDescription   String
+  itemPhotos        String[]
+
+  // Valuation
+  valuationType     ValuationType
+  valuedAmount      Decimal?          @db.Decimal(12, 2)
+  currency          Currency          @default(GBP)
+
+  // Validity
+  validFrom         DateTime?
+  validUntil        DateTime?
+
+  // Document
+  certificateUrl    String?
+
+  // Status
+  status            ValuationStatus   @default(PENDING)
+
+  notes             String?
+
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@index([customerId])
+  @@map("valuations")
+}
+
+enum ValuationType {
+  INSURANCE
+  PROBATE
+  RESALE
+  CURIOSITY
+}
+
+enum ValuationStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  ISSUED
+}
+
+// ============================================
+// SERVICES - CONSIGNMENT / TRADE-IN
+// ============================================
+
+model Consignment {
+  id                String              @id @default(cuid())
+  consignmentNumber String              @unique
+
+  customerId        String
+  customer          Customer            @relation(fields: [customerId], references: [id])
+
+  type              ConsignmentType
+
+  // Item Details
+  itemDescription   String
+  itemPhotos        String[]
+  itemCondition     ItemCondition
+
+  // Pricing
+  agreedPrice       Decimal?            @db.Decimal(12, 2)
+  salePrice         Decimal?            @db.Decimal(12, 2)
+  commissionRate    Decimal?            @db.Decimal(4, 2)  // Percentage
+
+  // Status
+  status            ConsignmentStatus   @default(INTAKE)
+
+  // Dates
+  intakeDate        DateTime            @default(now())
+  soldDate          DateTime?
+  settledDate       DateTime?
+  returnedDate      DateTime?
+
+  notes             String?
+
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([customerId])
+  @@map("consignments")
+}
+
+enum ConsignmentType {
+  CONSIGNMENT
+  TRADE_IN
+  PURCHASE
+}
+
+enum ConsignmentStatus {
+  INTAKE
+  EVALUATION
+  ACTIVE
+  SOLD
+  SETTLED
+  RETURNED
+  CANCELLED
+}
+
+// ============================================
+// CUSTOMER - WISHLIST
+// ============================================
+
+model WishlistItem {
+  id          String    @id @default(cuid())
+  customerId  String
+  customer    Customer  @relation(fields: [customerId], references: [id])
+
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id])
+
+  notes       String?
+  priority    Int       @default(0)
+
+  notifyOnSale      Boolean   @default(false)
+  notifyOnRestock   Boolean   @default(false)
+
+  addedAt     DateTime  @default(now())
+
+  @@unique([customerId, productId])
+  @@index([customerId])
+  @@map("wishlist_items")
+}
+
+// ============================================
+// ANALYTICS & AUDIT
+// ============================================
+
+model AuditLog {
+  id            String    @id @default(cuid())
+
+  userId        String?
+  user          User?     @relation(fields: [userId], references: [id])
+
+  action        String    // CREATE, UPDATE, DELETE, etc.
+  entityType    String    // Customer, Order, Product, etc.
+  entityId      String
+
+  oldValues     Json?
+  newValues     Json?
+
+  ipAddress     String?
+  userAgent     String?
+
+  createdAt     DateTime  @default(now())
+
+  @@index([entityType, entityId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model AnalyticsEvent {
+  id            String    @id @default(cuid())
+
+  eventType     String
+  eventData     Json
+
+  // Session Info
+  sessionId     String?
+  customerId    String?
+  userId        String?
+
+  // Context
+  source        String?
+  deviceType    String?
+
+  createdAt     DateTime  @default(now())
+
+  @@index([eventType])
+  @@index([createdAt])
+  @@map("analytics_events")
+}
+
+// ============================================
+// NOTIFICATIONS
+// ============================================
+
+model Notification {
+  id            String            @id @default(cuid())
+
+  userId        String
+  user          User              @relation(fields: [userId], references: [id])
+
+  type          NotificationType
+  title         String
+  message       String
+
+  // Reference
+  referenceType String?
+  referenceId   String?
+
+  isRead        Boolean           @default(false)
+  readAt        DateTime?
+
+  createdAt     DateTime          @default(now())
+
+  @@index([userId])
+  @@index([isRead])
+  @@map("notifications")
+}
+
+enum NotificationType {
+  ORDER_PLACED
+  ORDER_SHIPPED
+  LOW_STOCK
+  APPOINTMENT_REMINDER
+  FOLLOW_UP_DUE
+  REPAIR_READY
+  PAYMENT_RECEIVED
+  SYSTEM_ALERT
+}
+
+// ============================================
+// SETTINGS & CONFIGURATION
+// ============================================
+
+model Setting {
+  id        String    @id @default(cuid())
+  key       String    @unique
+  value     Json
+  group     String    @default("general")
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("settings")
+}
+
+model ExchangeRate {
+  id            String    @id @default(cuid())
+  fromCurrency  Currency
+  toCurrency    Currency
+  rate          Decimal   @db.Decimal(10, 6)
+  validFrom     DateTime  @default(now())
+
+  createdAt     DateTime  @default(now())
+
+  @@index([fromCurrency, toCurrency])
+  @@map("exchange_rates")
+}
