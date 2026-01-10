@@ -1,14 +1,22 @@
 'use client'
 
 import { Bell, Search, User, LogOut, Menu } from 'lucide-react'
-import { useSession, signOut } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useSidebar } from './sidebar-context'
 
 export function Header() {
-  const { data: session } = useSession()
+  const router = useRouter()
   const { toggleMobile } = useSidebar()
+
+  const handleLogout = () => {
+    // Clear demo auth and redirect to landing page
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('demo-auth')
+    }
+    router.push('/')
+  }
 
   return (
     <header className="flex h-16 items-center justify-between border-b bg-white px-4 lg:px-6">
@@ -55,9 +63,9 @@ export function Header() {
           {/* User info - hidden on small mobile */}
           <div className="hidden md:block text-right">
             <p className="text-sm font-medium truncate max-w-[120px]">
-              {session?.user?.name || 'User'}
+              Admin User
             </p>
-            <p className="text-xs text-slate-500">{session?.user?.role || 'Role'}</p>
+            <p className="text-xs text-slate-500">Administrator</p>
           </div>
           <Button variant="ghost" size="icon">
             <User className="h-5 w-5" />
@@ -65,7 +73,8 @@ export function Header() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => signOut({ callbackUrl: '/login' })}
+            onClick={handleLogout}
+            title="Logout"
           >
             <LogOut className="h-5 w-5" />
           </Button>

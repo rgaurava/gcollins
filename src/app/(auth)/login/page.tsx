@@ -18,8 +18,12 @@ export default function LoginPage() {
     setError('')
     setLoading(true)
 
-    // Demo login - just redirect to dashboard
+    // Demo login - store auth state and redirect to dashboard
     if (email === 'admin@gcollinsandsons.com' && password === 'password') {
+      // Store demo auth state
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('demo-auth', JSON.stringify({ email, loggedIn: true }))
+      }
       setTimeout(() => {
         router.push('/dashboard')
       }, 500)
