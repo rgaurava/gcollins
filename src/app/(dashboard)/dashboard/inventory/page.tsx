@@ -15,6 +15,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Select } from '@/components/ui/select'
+import { Modal } from '@/components/ui/modal'
 import { formatCurrency } from '@/lib/utils'
 
 // Real product data from G. Collins & Sons website
@@ -217,6 +218,19 @@ export default function InventoryPage() {
   const [productTypeFilter, setProductTypeFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [newProduct, setNewProduct] = useState({
+    name: '',
+    sku: '',
+    category: '',
+    productType: '',
+    metalType: '',
+    metalPurity: '',
+    price: '',
+    costPrice: '',
+    stockQty: '1',
+    location: 'Showroom',
+  })
 
   const filteredProducts = products.filter((product) => {
     const matchesSearch =
@@ -244,7 +258,7 @@ export default function InventoryPage() {
           <h1 className="text-xl lg:text-2xl font-bold">Inventory</h1>
           <p className="text-sm lg:text-base text-slate-500">Manage products and stock levels</p>
         </div>
-        <Button className="w-full sm:w-auto">
+        <Button className="w-full sm:w-auto" onClick={() => setIsAddModalOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Add Product
         </Button>
@@ -414,6 +428,186 @@ export default function InventoryPage() {
           </Card>
         ))}
       </div>
+
+      {/* Add Product Modal */}
+      <Modal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        title="Add New Product"
+        size="lg"
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            // Demo: just close modal and show success
+            alert('Product added successfully! (Demo mode)')
+            setIsAddModalOpen(false)
+            setNewProduct({
+              name: '',
+              sku: '',
+              category: '',
+              productType: '',
+              metalType: '',
+              metalPurity: '',
+              price: '',
+              costPrice: '',
+              stockQty: '1',
+              location: 'Showroom',
+            })
+          }}
+          className="space-y-4"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Product Name *
+              </label>
+              <Input
+                required
+                placeholder="e.g., 1.50ct Round Brilliant Diamond Ring"
+                value={newProduct.name}
+                onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                SKU *
+              </label>
+              <Input
+                required
+                placeholder="e.g., 00012345"
+                value={newProduct.sku}
+                onChange={(e) => setNewProduct({ ...newProduct, sku: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Category *
+              </label>
+              <Select
+                options={categoryOptions.filter(o => o.value !== '')}
+                value={newProduct.category}
+                onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Product Type *
+              </label>
+              <Select
+                options={productTypeOptions.filter(o => o.value !== '')}
+                value={newProduct.productType}
+                onChange={(e) => setNewProduct({ ...newProduct, productType: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Metal Type
+              </label>
+              <Select
+                options={[
+                  { value: '', label: 'Select metal...' },
+                  { value: 'PLATINUM', label: 'Platinum' },
+                  { value: 'YELLOW_GOLD', label: 'Yellow Gold' },
+                  { value: 'WHITE_GOLD', label: 'White Gold' },
+                  { value: 'ROSE_GOLD', label: 'Rose Gold' },
+                  { value: 'STERLING_SILVER', label: 'Sterling Silver' },
+                ]}
+                value={newProduct.metalType}
+                onChange={(e) => setNewProduct({ ...newProduct, metalType: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Metal Purity
+              </label>
+              <Select
+                options={[
+                  { value: '', label: 'Select purity...' },
+                  { value: '950', label: '950 (Platinum)' },
+                  { value: '18ct', label: '18ct Gold' },
+                  { value: '14ct', label: '14ct Gold' },
+                  { value: '9ct', label: '9ct Gold' },
+                  { value: '925', label: '925 Sterling Silver' },
+                ]}
+                value={newProduct.metalPurity}
+                onChange={(e) => setNewProduct({ ...newProduct, metalPurity: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Retail Price (GBP) *
+              </label>
+              <Input
+                required
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                value={newProduct.price}
+                onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Cost Price (GBP)
+              </label>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                value={newProduct.costPrice}
+                onChange={(e) => setNewProduct({ ...newProduct, costPrice: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Stock Quantity
+              </label>
+              <Input
+                type="number"
+                min="0"
+                value={newProduct.stockQty}
+                onChange={(e) => setNewProduct({ ...newProduct, stockQty: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Location
+              </label>
+              <Select
+                options={[
+                  { value: 'Showroom', label: 'Showroom' },
+                  { value: 'Vault', label: 'Vault' },
+                  { value: 'Workshop', label: 'Workshop' },
+                  { value: 'On Approval', label: 'On Approval' },
+                ]}
+                value={newProduct.location}
+                onChange={(e) => setNewProduct({ ...newProduct, location: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit">
+              Add Product
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   )
 }
